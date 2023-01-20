@@ -51,7 +51,7 @@ class AgentDetailsSpider(scrapy.Spider,url_extracter_class):
                         wait_time = 5,
                         screenshot=True,
                         ))
-            break
+        
 
     def parse(self, response):
         driver =  response.request.meta['driver']
@@ -76,7 +76,7 @@ class AgentDetailsSpider(scrapy.Spider,url_extracter_class):
             adr_lst.append(adr.strip())
         
 
-        phones = response.selector.xpath("//*[@id='__layout']/div/main/article/section/div/div[1]/div[2]/div[2]/div[1]/div[1]/div[2]/h4[1]/span/a/text()").getall()
+        phones = response.selector.xpath("//*[@id='__layout']/div/main/article/section/div/div[1]/div[2]/div[2]/div[1]/div[1]/div[2]/h4/span/a/text()").getall()
         
         phone_dic = {}
         for i,phone in enumerate(phones):
@@ -84,28 +84,55 @@ class AgentDetailsSpider(scrapy.Spider,url_extracter_class):
             key = f"phone {i}"
             phone_dic[key] = p
 
+        specialities = response.selector.xpath("//div[@class='col md:max-w-1/2 lg:max-w-full']/div/div/h4[contains(text(),'Specia')]/following-sibling::node()/span/text()").getall()
+        spe_lst = []
+        for sep in specialities:
+            s = sep.strip()
+            spe_lst.append(s)
+        
+        spec_o = " ".join(spe_lst)
 
-        # if len(phone_lst) == 1:
-        #     phone1 = phone_lst[0]
-        # elif len(phone_lst) == 2:
-        #     phone2 = phone_lst[1]
-        # elif len(phone_lst) == 3:
-        #     phone3 = phone_lst[2]
-        # else:
-        #     pass
+        about_lst = response.selector.xpath("(//*[@id='__layout']/div/main/article/section/div/div[1]/div[2]/div[2]/div[2]/div/child::node()//text())").getall()
+        a = []
+        for ab in about_lst:
+            b = ab.strip()
+            b = " ".join(b.split())
+            if len(b) > 25:
+                a.append(b)
+
+        zip = (adr_lst[0]+" "+adr_lst[1])
+        zip_cd = ""
+        if zip[-5:].isalnum():
+            zip_cd = zip[-5:]
+        else:
+            zip_cd = zip[-10:]
+
+        lang = response.selector.xpath("//div[@class='col md:max-w-1/2 lg:max-w-full']//h4[contains(text(),'Languages')]/following-sibling::p/span/text()").getall()
+        language = " ".join(lang)
 
         yield{
             "Agent url":response.meta.get("Agent URL"),
             "Name":response.selector.xpath("normalize-space(//*[@id='__layout']/div/main/article/section/div/div[1]/h1/text())").get(),
             "Profile Pic":response.selector.xpath("//*[@id='__layout']/div/main/article/section/div/div[1]/div[2]/div[1]/div/div[1]/img/@src").get(),
             "Role":response.selector.xpath("//*[@id='__layout']/div/main/article/section/div/div[1]/div[1]/h6/span[1]/text()").get(),
-            "Lic No":response.selector.xpath("normalize-space(//*[@id='__layout']/div/main/article/section/div/div[1]/div[1]/h6/span[3]/text())").get()[9:],
-            "Address":adr_lst[0]+" "+adr_lst[1],
+            "Lic No":response.selector.xpath("normalize-space(//*[@id='__layout']/div/main/article/section/div/div[1]/div[1]/h6/span[3])").get(),
+            "Address":adr_lst[0]+", "+ adr_lst[1],
             "Office Name":response.selector.xpath("normalize-space(//*[@id='__layout']/div/main/article/section/div/div[1]/div[2]/div[2]/div[1]/div[1]/div[1]/h4/a/text())").get(),
-            "Zip": (adr_lst[0]+" "+adr_lst[1])[-5:],
+            "Zip": str(zip_cd),  
             "Phone 1": phone_dic.get("phone 0"),
             "Phone 2": phone_dic.get("phone 1"),
             "Phone 3": phone_dic.get("phone 2"),
+            "Languages " : language,
+            "Designations " : response.selector.xpath("normalize-space(//*[@id='__layout']/div/main/article/section/div/div[1]/div[2]/div[1]/div/div[2]/div/div[2]/p/text())").get(),
+            "Specialties " : spec_o ,
+            "Agent Website " : response.selector.xpath("//*[@id='__layout']/div/main/article/section/div/div[1]/div[2]/div[2]/div[1]/div[2]/div[2]/a/@href").get(),
+            "Linkedin " : response.selector.xpath("//*[@id='__layout']/div/main/article/section/div/div[1]/div[2]/div[2]/div[1]/div[2]/div[1]/div/a[@aria-label='RE/MAX on LINKEDIN']/@href").get(),
+            "Facebook " : response.selector.xpath("//*[@id='__layout']/div/main/article/section/div/div[1]/div[2]/div[2]/div[1]/div[2]/div[1]/div/a[@aria-label='RE/MAX on FACEBOOK']/@href").get(),
+            "Twitter " : response.selector.xpath("//*[@id='__layout']/div/main/article/section/div/div[1]/div[2]/div[2]/div[1]/div[2]/div[1]/div/a[@aria-label='RE/MAX on TWITTER']/@href").get(),
+            "Instagram " : response.selector.xpath("//*[@id='__layout']/div/main/article/section/div/div[1]/div[2]/div[2]/div[1]/div[2]/div[1]/div/a[@aria-label='RE/MAX on INSTAGRAM']/@href").get(),
+            "Youtube " : response.selector.xpath("//*[@id='__layout']/div/main/article/section/div/div[1]/div[2]/div[2]/div[1]/div[2]/div[1]/div/a[@aria-label='RE/MAX on YOUTUBE']/@href").get(),
+            "About " : a[0],
+
         }
 
 
